@@ -4,6 +4,7 @@ using Warmup.App.Core.Base.Views;
 using Warmup.App.Core.Controllers;
 using Warmup.App.Core.Models.Core;
 using Warmup.App.Data;
+using Warmup.App.Data.Entities;
 
 namespace Warmup.App
 {
@@ -16,6 +17,19 @@ namespace Warmup.App
         {
             this.singletonDependencyContainer.Add(typeof(WarmupDbContext), new WarmupDbContext());
             this.singletonDependencyContainer.Add(typeof(Authentication), new Authentication());
+        }
+
+        private void SeedDatabase()
+        {
+            UserRole adminRole = new UserRole { Name = "Admin" };
+            UserRole seniorCashierRole = new UserRole { Name = "SeniorCashier" };
+            UserRole juniorCashierRole = new UserRole { Name = "JuniorCashier" };
+            UserRole clientRole = new UserRole { Name = "Client" };
+        
+            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(adminRole);
+            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(seniorCashierRole);
+            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(juniorCashierRole);
+            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(clientRole);
         }
 
         private string GetInput() => Console.ReadLine();
@@ -38,7 +52,7 @@ namespace Warmup.App
                             )
                         ).FirstOrDefault();
 
-            if(controllerHolder == null)
+            if (controllerHolder == null)
             {
                 return "Invalid or unsupported command...";
             }
@@ -86,6 +100,7 @@ namespace Warmup.App
         public void Start()
         {
             this.Configure();
+            this.SeedDatabase();
             this.Run();
         }
     }

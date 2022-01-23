@@ -23,24 +23,16 @@ namespace Warmup.App.Core.Controllers
 
             if(this.authentication.IsAuthenticated)
             {
-                return new HomeView()
-                {
-                    ViewData = new Dictionary<string, object>
-                    {
-                        ["username"] = this.authentication.User,
-                        ["view"] = this.GetResource("headline-user.txt")
-                    }
-                };
+                this.ViewData["username"] = this.authentication.User;
+                this.ViewData["view"] = this.GetResource("headline-user.txt");
+
+                return this.View();
             } 
             else
             {
-                return new HomeView
-                {
-                    ViewData = new Dictionary<string, object>
-                    {
-                        ["view"] = this.GetResource("headline-guest.txt")
-                    }
-                };
+                this.ViewData["view"] = this.GetResource("headline-guest.txt");
+
+                return this.View();
             }
         }
 

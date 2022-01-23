@@ -4,7 +4,7 @@ namespace Warmup.App.Core.Views.Base
 {
     public abstract class BaseView : IView
     {
-        public Dictionary<string, object> ViewData;
+        public Dictionary<string, object> ViewData { get; set; } = new Dictionary<string, object>();
 
         protected virtual string GetFormattedView()
         {

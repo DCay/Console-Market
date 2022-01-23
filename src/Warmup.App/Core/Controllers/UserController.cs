@@ -26,26 +26,45 @@ namespace Warmup.App.Core.Controllers
         [CommandUsage("/register {username} {password} {confirmPassword}")]
         public IView Register(string username, string password, string confirmPassword)
         {
+            if (this.authentication.IsAuthenticated)
+            {
+                Console.WriteLine("You cannot register a user when you are logged in...");
+                return new BlankView();
+            }
+
             if (password != confirmPassword)
             {
                 Console.WriteLine("Passwords do not match...");
                 return new BlankView();
             }
 
+            if (this.warmupDbContext.Users.Any(x => x.Username == username))
+            {
+                Console.WriteLine("There is already a user with the given username...");
+                return new BlankView();
+            }
+
+            UserRole userRole = null;
+
+            if (this.warmupDbContext.Users.Count == 0)
+            {
+                userRole = this.warmupDbContext.Roles.FirstOrDefault(role => role.Name == "Admin");
+            }
+            else
+            {
+                userRole = this.warmupDbContext.Roles.FirstOrDefault(role => role.Name == "Client");
+            }
+
             this.warmupDbContext.Users.Add(new User
             {
                 Username = username,
                 Password = password,
-                Role = null
+                Role = userRole
             });
 
-            return new RegisterView
-            {
-                ViewData = new Dictionary<string, object>
-                {
-                    ["username"] = username
-                }
-            };
+            this.ViewData["username"] = username;
+
+            return this.View();
         }
 
         [CommandAlias("/login")]
@@ -53,6 +72,12 @@ namespace Warmup.App.Core.Controllers
         [CommandUsage("/login {username} {password}")]
         public IView Login(string username, string password)
         {
+            if (this.authentication.IsAuthenticated)
+            {
+                Console.WriteLine("You are already logged in...");
+                return new BlankView();
+            }
+
             if (!this.warmupDbContext.Users.Any(x => x.Username == username && x.Password == password))
             {
                 Console.WriteLine("User does not exist...");
@@ -60,16 +85,13 @@ namespace Warmup.App.Core.Controllers
             }
 
             this.authentication.User = username;
+            this.authentication.Role = this.warmupDbContext.Users.FirstOrDefault(x => x.Username == username).Role.Name;
             this.authentication.IsAuthenticated = true;
             this.authentication.SessionData.Add(username + "-cart", new UserCart());
 
-            return new LoginView
-            {
-                ViewData = new Dictionary<string, object>
-                {
-                    ["username"] = username
-                }
-            };
+            this.ViewData["username"] = username;
+
+            return this.View();
         }
 
         [CommandAlias("/logout")]
@@ -82,12 +104,39 @@ namespace Warmup.App.Core.Controllers
                 Console.WriteLine("You are not logged in...");
                 return new BlankView();
             }
-            
+
             this.authentication.User = null;
             this.authentication.IsAuthenticated = false;
             this.authentication.SessionData.Clear();
 
-            return new LogoutView();
+            return this.View();
+        }
+
+        [CommandAlias("/authorize")]
+        [CommandDescription("Assigns a given role to a user")]
+        [CommandUsage("/authorize {username} {role}")]
+        [CommandAuthority("Admin")]
+        public IView Authorize(string username, string role)
+        {
+            if (!this.authentication.IsAuthenticated)
+            {
+                Console.WriteLine("You are not logged in...");
+                return new BlankView();
+            }
+
+            if (this.authentication.Role != "Admin")
+            {
+                Console.WriteLine("You are not authorized to do this...");
+                return new BlankView();
+            }
+
+            this.warmupDbContext.Users.FirstOrDefault(x => x.Username == username).Role 
+                = this.warmupDbContext.Roles.FirstOrDefault(y => y.Name == role);
+
+            this.ViewData["username"] = username;
+            this.ViewData["role"] = role;
+
+            return this.View();
         }
     }
 }

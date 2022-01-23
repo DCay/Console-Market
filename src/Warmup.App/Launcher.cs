@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using Warmup.App.Common.Attributes;
 using Warmup.App.Core.Controllers;
 
@@ -23,15 +24,7 @@ namespace Warmup.App
 
 
         // GOALS FOR NOW:
-        // 1. Seed Roles into Database
-        //    * Admin - Full permissions - manage products / receipts / cashDecks / ProductStorage / ProductDisplay
-        //    * Senior Cashier - Manage Receipts (service clients) / CashDecks / Product Storage / Product Display
-        //    * Junior Cashier - Manage Receipts (service clients)
-        //    * Client - Manage his own cart
-        // 2. Implement roles authorization
-        // 3. Implement Product Creation
-        // 4. Implement Product Storage Creation
-        // 5. Implement Product Display Creation
+        // 5.5. Implement Product / Product Storage / Product Display visualization
         // 6. Implement Client add to Cart
         // 7. Implement CashDecks creation and assignment of cashier
         // 8. Cashout
