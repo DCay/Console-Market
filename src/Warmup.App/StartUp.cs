@@ -3,6 +3,7 @@ using Warmup.App.Common.Attributes;
 using Warmup.App.Core.Base.Views;
 using Warmup.App.Core.Controllers;
 using Warmup.App.Core.Models.Core;
+using Warmup.App.Core.Views.Core;
 using Warmup.App.Data;
 using Warmup.App.Data.Entities;
 
@@ -75,7 +76,19 @@ namespace Warmup.App
                             .Any() && ((CommandAliasAttribute)method.GetCustomAttributes(typeof(CommandAliasAttribute)).FirstOrDefault()).Alias == commandName)
                 .FirstOrDefault();
 
-            IView result = (IView) controllerMethod.Invoke(controllerObject, commandArgs == null ? null : commandArgs.ToArray());
+            string authenticationRole = ((Authentication)this.singletonDependencyContainer[typeof(Authentication)]).Role;
+            CommandAuthorityAttribute commandAuthorityAttribute = ((CommandAuthorityAttribute)controllerMethod.GetCustomAttributes(typeof(CommandAuthorityAttribute)).FirstOrDefault());
+
+            IView result = null;
+
+            if (commandAuthorityAttribute == null || commandAuthorityAttribute.Authorities.Contains(authenticationRole))
+            {
+                result = (IView)controllerMethod.Invoke(controllerObject, commandArgs == null ? null : commandArgs.ToArray());
+            } 
+            else
+            {
+                result = new UnauthorizedView();
+            }
 
             return result.GetRepresentation();
         }
@@ -88,11 +101,18 @@ namespace Warmup.App
             {
                 KeyValuePair<string, List<string>> command = this.ParseInput(this.GetInput());
 
-                string result = this.InvokeAction(command.Key, command.Value).Trim();
-
-                if (!string.IsNullOrEmpty(result))
+                try
                 {
-                    Console.WriteLine(result);
+                    string result = this.InvokeAction(command.Key, command.Value).Trim();
+
+                    if (!string.IsNullOrEmpty(result))
+                    {
+                        Console.WriteLine(result);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
                 }
             }
         }

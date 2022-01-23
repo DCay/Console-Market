@@ -124,12 +124,6 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            if (this.authentication.Role != "Admin")
-            {
-                Console.WriteLine("You are not authorized to do this...");
-                return new BlankView();
-            }
-
             this.warmupDbContext.Users.FirstOrDefault(x => x.Username == username).Role 
                 = this.warmupDbContext.Roles.FirstOrDefault(y => y.Name == role);
 

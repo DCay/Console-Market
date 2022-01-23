@@ -31,12 +31,6 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            if (this.authentication.Role != "Admin")
-            {
-                Console.WriteLine("You are not authorized to do this...");
-                return new BlankView();
-            }
-
             Product product = new Product
             {
                 Name = productName,
@@ -60,12 +54,6 @@ namespace Warmup.App.Core.Controllers
             if (!this.authentication.IsAuthenticated)
             {
                 Console.WriteLine("You are not logged in...");
-                return new BlankView();
-            }
-
-            if (this.authentication.Role != "Admin" && this.authentication.Role != "SeniorCashier")
-            {
-                Console.WriteLine("You are not authorized to do this...");
                 return new BlankView();
             }
 
@@ -107,12 +95,6 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            if (this.authentication.Role != "Admin" && this.authentication.Role != "SeniorCashier")
-            {
-                Console.WriteLine("You are not authorized to do this...");
-                return new BlankView();
-            }
-
             if (!this.warmupDbContext.ProductStorages.Any(p => p.Product.Name == productName))
             {
                 Console.WriteLine("Product not present in the storage...");
@@ -147,6 +129,53 @@ namespace Warmup.App.Core.Controllers
 
             this.ViewData["productName"] = productName;
             this.ViewData["quantity"] = productQuantity;
+
+            return this.View();
+        }
+
+        [CommandAlias("/product-all")]
+        [CommandDescription("Visualizes all products in the system")]
+        [CommandUsage("Just type it")]
+        public IView ProductAll()
+        {
+            this.ViewData["products"] = this.warmupDbContext.Products;
+            this.ViewData["view"] = this.GetResource("product-all.txt");
+
+            return this.View();
+        }
+
+        [CommandAlias("/product-storage")]
+        [CommandDescription("Visualizes all products, currently stored in the storage")]
+        [CommandUsage("Just type it")]
+        [CommandAuthority("Admin", "SeniorCashier")]
+        public IView ProductStorage()
+        {
+            if (!this.authentication.IsAuthenticated)
+            {
+                Console.WriteLine("You are not logged in...");
+                return new BlankView();
+            }
+
+            this.ViewData["productStorages"] = this.warmupDbContext.ProductStorages;
+            this.ViewData["view"] = this.GetResource("product-storage.txt");
+
+            return this.View();
+        }
+
+
+        [CommandAlias("/product-displayed")]
+        [CommandDescription("Visualizes all products, currently displayed")]
+        [CommandUsage("Just type it")]
+        public IView ProductDisplayed()
+        {
+            if (!this.authentication.IsAuthenticated)
+            {
+                Console.WriteLine("You are not logged in...");
+                return new BlankView();
+            }
+
+            this.ViewData["productDisplays"] = this.warmupDbContext.ProductDisplays;
+            this.ViewData["view"] = this.GetResource("product-displayed.txt");
 
             return this.View();
         }
