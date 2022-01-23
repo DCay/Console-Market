@@ -24,9 +24,6 @@ namespace Warmup.App
 
 
         // GOALS FOR NOW:
-        // 5.9. Add Automatic Authorization
-        // 6. Implement Client add to Cart
-        // 7. Implement CashDecks creation and assignment of cashier
         // 8. Cashout
         // 9. EF Core
         // 10. ASP.NET Core

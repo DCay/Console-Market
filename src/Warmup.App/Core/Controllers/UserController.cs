@@ -87,7 +87,11 @@ namespace Warmup.App.Core.Controllers
             this.authentication.User = username;
             this.authentication.Role = this.warmupDbContext.Users.FirstOrDefault(x => x.Username == username).Role.Name;
             this.authentication.IsAuthenticated = true;
-            this.authentication.SessionData.Add(username + "-cart", new UserCart());
+
+            if (!this.authentication.SessionData.ContainsKey(username + "-cart"))
+            {
+                this.authentication.SessionData.Add(username + "-cart", new UserCart());
+            }
 
             this.ViewData["username"] = username;
 
@@ -106,8 +110,8 @@ namespace Warmup.App.Core.Controllers
             }
 
             this.authentication.User = null;
+            this.authentication.Role = null;
             this.authentication.IsAuthenticated = false;
-            this.authentication.SessionData.Clear();
 
             return this.View();
         }

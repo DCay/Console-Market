@@ -14,6 +14,8 @@ namespace Warmup.App.Data
 
         public List<UserRole> Roles { get; set; }
 
+        public List<CashDeck> CashDecks { get; set; }
+
         public WarmupDbContext()
         {
             this.Products = new List<Product>();
@@ -21,6 +23,7 @@ namespace Warmup.App.Data
             this.ProductStorages = new List<ProductStorage>();
             this.Users = new List<User>();
             this.Roles = new List<UserRole>();
+            this.CashDecks = new List<CashDeck>();
         }
     }
 }
