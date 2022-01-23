@@ -4,6 +4,7 @@ using Warmup.App.Core.Models.Checkout;
 using Warmup.App.Core.Models.Core;
 using Warmup.App.Core.Models.User;
 using Warmup.App.Core.Views.Core;
+using Warmup.App.Core.Views.Product;
 using Warmup.App.Data;
 using Warmup.App.Data.Entities;
 
@@ -110,15 +111,15 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            if(!this.queueManager.DeckQueues.ContainsKey(int.Parse(index)))
+            if (!this.queueManager.DeckQueues.ContainsKey(int.Parse(index)))
             {
                 Console.WriteLine("Invalid queue index...");
                 return new BlankView();
             }
 
             User user = this.warmupDbContext.Users.FirstOrDefault(x => x.Username == this.authentication.User);
-            UserCart userCart = (UserCart) this.authentication.SessionData[this.authentication.User + "-cart"];
-            
+            UserCart userCart = (UserCart)this.authentication.SessionData[this.authentication.User + "-cart"];
+
             if (userCart.productsAndQuantity.Count == 0)
             {
                 Console.WriteLine("You have no products in your cart...");
@@ -132,16 +133,47 @@ namespace Warmup.App.Core.Controllers
             return this.View();
         }
 
-        [CommandAlias("/deck-cashout")]
-        [CommandDescription("Cashouts the first user from the queue of the specified deck")]
-        [CommandUsage("/deck-cashout {index}")]
+        [CommandAlias("/deck-checkout")]
+        [CommandDescription("Checks out the first user from the queue of the specified deck")]
+        [CommandUsage("/deck-checkout {index}")]
         [CommandAuthority("Admin", "SeniorCashier", "JuniorCashier")]
-        public IView DeckCashout(string index)
+        public IView DeckCheckout(string index)
         {
-            // if the current logged user is cashier assigned to this deck
-            // if the queue has someone on it
+            if (!this.authentication.IsAuthenticated)
+            {
+                Console.WriteLine("You are not logged in...");
+                return new BlankView();
+            }
 
-            return null;
+            CashDeck deck = this.warmupDbContext.CashDecks.FirstOrDefault(cd => cd.Index == int.Parse(index));
+
+            if (this.authentication.User != deck.Cashier.Username)
+            {
+                Console.WriteLine("You are not assigned to this deck...");
+                return new BlankView();
+            }
+
+            if (this.queueManager.DeckQueues[deck.Index].Count == 0)
+            {
+                Console.WriteLine("There are no clients in the queue...");
+                return new BlankView();
+            }
+
+            User client = this.queueManager.DeckQueues[deck.Index].Dequeue();
+            UserCart clientCart = (UserCart)this.authentication.SessionData[client.Username + "-cart"];
+            Dictionary<Product, int> productsAndQuantity = clientCart.productsAndQuantity
+                .ToDictionary(x => this.warmupDbContext.Products.FirstOrDefault(p => p.Id == x.Key), x => x.Value);
+
+            IView cartView = new CartView();
+
+            cartView.ViewData["view"] = this.GetResource("cart.txt");
+            cartView.ViewData["cart"] = productsAndQuantity;
+
+            File.WriteAllText($"{this.authentication.User}-Receipt-" + DateTime.Now.ToLongTimeString, cartView.GetRepresentation());
+            
+            this.authentication.SessionData.Remove(client.Username + "-cart");
+            
+            return this.View();
         }
     }
 }
