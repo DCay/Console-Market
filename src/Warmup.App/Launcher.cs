@@ -24,7 +24,6 @@ namespace Warmup.App
 
 
         // GOALS FOR NOW:
-        // 8. Cashout
         // 9. EF Core
         // 10. ASP.NET Core
 

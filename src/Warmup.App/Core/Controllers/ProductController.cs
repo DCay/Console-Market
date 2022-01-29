@@ -1,4 +1,5 @@
-﻿using Warmup.App.Common.Attributes;
+﻿using Microsoft.EntityFrameworkCore;
+using Warmup.App.Common.Attributes;
 using Warmup.App.Core.Base.Views;
 using Warmup.App.Core.Models.Core;
 using Warmup.App.Core.Models.User;
@@ -41,6 +42,8 @@ namespace Warmup.App.Core.Controllers
 
             this.warmupDbContext.Products.Add(product);
 
+            this.warmupDbContext.SaveChanges();
+
             this.ViewData["productName"] = productName;
 
             return this.View();
@@ -72,11 +75,13 @@ namespace Warmup.App.Core.Controllers
 
             ProductStorage productStorage = new ProductStorage
             {
-                Product = this.warmupDbContext.Products.FirstOrDefault(p => p.Name == productName),
+                ProductId = this.warmupDbContext.Products.FirstOrDefault(p => p.Name == productName).Id,
                 Quantity = int.Parse(productQuantity)
             };
 
             this.warmupDbContext.ProductStorages.Add(productStorage);
+
+            this.warmupDbContext.SaveChanges();
 
             this.ViewData["productName"] = productName;
             this.ViewData["quantity"] = productQuantity;
@@ -96,7 +101,7 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            if (!this.warmupDbContext.ProductStorages.Any(p => p.Product.Name == productName))
+            if (!this.warmupDbContext.ProductStorages.Include(ps => ps.Product).Any(p => p.Product.Name == productName))
             {
                 Console.WriteLine("Product not present in the storage...");
                 return new BlankView();
@@ -110,7 +115,7 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            ProductStorage productStorage = this.warmupDbContext.ProductStorages.FirstOrDefault(ps => ps.Product.Name == productName);
+            ProductStorage productStorage = this.warmupDbContext.ProductStorages.Include(ps => ps.Product).FirstOrDefault(ps => ps.Product.Name == productName);
 
             if(productStorage.Quantity < parsedProductQuantity)
             {
@@ -122,11 +127,14 @@ namespace Warmup.App.Core.Controllers
 
             ProductDisplay productDisplay = new ProductDisplay
             {
-                Product = productStorage.Product,
+                ProductId = productStorage.Product.Id,
                 Quantity = parsedProductQuantity
             };
 
+            this.warmupDbContext.Update(productStorage);
             this.warmupDbContext.ProductDisplays.Add(productDisplay);
+
+            this.warmupDbContext.SaveChanges();
 
             this.ViewData["productName"] = productName;
             this.ViewData["quantity"] = productQuantity;
@@ -139,7 +147,7 @@ namespace Warmup.App.Core.Controllers
         [CommandUsage("Just type it")]
         public IView ProductAll()
         {
-            this.ViewData["products"] = this.warmupDbContext.Products;
+            this.ViewData["products"] = this.warmupDbContext.Products.ToList();
             this.ViewData["view"] = this.GetResource("product-all.txt");
 
             return this.View();
@@ -157,7 +165,7 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            this.ViewData["productStorages"] = this.warmupDbContext.ProductStorages;
+            this.ViewData["productStorages"] = this.warmupDbContext.ProductStorages.ToList();
             this.ViewData["view"] = this.GetResource("product-storage.txt");
 
             return this.View();
@@ -174,7 +182,7 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            this.ViewData["productDisplays"] = this.warmupDbContext.ProductDisplays;
+            this.ViewData["productDisplays"] = this.warmupDbContext.ProductDisplays.ToList();
             this.ViewData["view"] = this.GetResource("product-displayed.txt");
 
             return this.View();
@@ -192,7 +200,9 @@ namespace Warmup.App.Core.Controllers
             }
 
             int requestedQuantity = int.Parse(productQuantity);
-            ProductDisplay productDisplay = this.warmupDbContext.ProductDisplays.FirstOrDefault(productDisplay => productDisplay.Product.Name == productName);
+            ProductDisplay productDisplay = this.warmupDbContext.ProductDisplays
+                .Include(pd => pd.Product)
+                .FirstOrDefault(productDisplay => productDisplay.Product.Name == productName);
 
             if (productDisplay == null || productDisplay.Quantity < requestedQuantity)
             {
@@ -211,10 +221,17 @@ namespace Warmup.App.Core.Controllers
 
             productDisplay.Quantity -= requestedQuantity;
 
+            this.warmupDbContext.Update(productDisplay);
+
             if (productDisplay.Quantity == 0)
             {
-                this.warmupDbContext.ProductDisplays = this.warmupDbContext.ProductDisplays.Where(x => x.Product.Name != productName).ToList();
+                this.warmupDbContext.ProductDisplays.AddRange(this.warmupDbContext.ProductDisplays
+                    .Include(pd => pd.Product)
+                    .Where(x => x.Product.Name != productName)
+                    .ToList());
             }
+
+            this.warmupDbContext.SaveChanges();
 
             this.ViewData["product"] = productDisplay.Product.Name;
             this.ViewData["quantity"] = requestedQuantity;

@@ -24,48 +24,42 @@ namespace Warmup.App
 
         private void SeedDatabase()
         {
-            UserRole adminRole = new UserRole { Name = "Admin" };
-            UserRole seniorCashierRole = new UserRole { Name = "SeniorCashier" };
-            UserRole juniorCashierRole = new UserRole { Name = "JuniorCashier" };
-            UserRole clientRole = new UserRole { Name = "Client" };
-
-            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(adminRole);
-            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(seniorCashierRole);
-            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(juniorCashierRole);
-            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(clientRole);
-
-            User admin = new User
+            if (!((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Any())
             {
-                Username = "pesho",
-                Password = "123",
-                Role = adminRole
-            };
+                UserRole adminRole = new UserRole { Name = "Admin" };
+                UserRole seniorCashierRole = new UserRole { Name = "SeniorCashier" };
+                UserRole juniorCashierRole = new UserRole { Name = "JuniorCashier" };
+                UserRole clientRole = new UserRole { Name = "Client" };
 
-            User seniorCashier = new User
+                ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(adminRole);
+                ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(seniorCashierRole);
+                ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(juniorCashierRole);
+                ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.Add(clientRole);
+
+                ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).SaveChanges();
+            }
+
+            if (!((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Users.Any())
             {
-                Username = "gosho",
-                Password = "123",
-                Role = seniorCashierRole
-            };
+                User admin = new User
+                {
+                    Username = "admin",
+                    Password = "123",
+                    RoleId = ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Roles.FirstOrDefault(role => role.Name == "Admin").Id
+                };
 
-            User juniorCashier = new User
-            {
-                Username = "toshka",
-                Password = "123",
-                Role = juniorCashierRole
-            };
+                ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Users.Add(admin);
+            }
 
-            User client = new User
-            {
-                Username = "prakash",
-                Password = "123",
-                Role = clientRole
-            };
+            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).SaveChanges();
+        }
 
-            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Users.Add(admin);
-            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Users.Add(seniorCashier);
-            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Users.Add(juniorCashier);
-            ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]).Users.Add(client);
+        private void InitServices()
+        {
+            WarmupDbContext warmupDbContext = ((WarmupDbContext)this.singletonDependencyContainer[typeof(WarmupDbContext)]);
+            QueueManager queueManager = ((QueueManager)this.singletonDependencyContainer[typeof(QueueManager)]);
+
+            warmupDbContext.CashDecks.ToList().ForEach(cd => queueManager.DeckQueues.Add(cd.CashDeckIndex, new Queue<User>()));
         }
 
         private string GetInput() => Console.ReadLine();
@@ -156,6 +150,7 @@ namespace Warmup.App
         {
             this.Configure();
             this.SeedDatabase();
+            this.InitServices();
             this.Run();
         }
     }

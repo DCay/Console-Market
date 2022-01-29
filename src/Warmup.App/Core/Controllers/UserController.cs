@@ -6,6 +6,7 @@ using Warmup.App.Core.Views.Core;
 using Warmup.App.Data.Entities;
 using Warmup.App.Core.Models.Core;
 using Warmup.App.Core.Models.User;
+using Microsoft.EntityFrameworkCore;
 
 namespace Warmup.App.Core.Controllers
 {
@@ -44,23 +45,25 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            UserRole userRole = null;
+            string userRole = null;
 
-            if (this.warmupDbContext.Users.Count == 0)
+            if (this.warmupDbContext.Users.Count() == 0)
             {
-                userRole = this.warmupDbContext.Roles.FirstOrDefault(role => role.Name == "Admin");
+                userRole = this.warmupDbContext.Roles.FirstOrDefault(role => role.Name == "Admin").Id;
             }
             else
             {
-                userRole = this.warmupDbContext.Roles.FirstOrDefault(role => role.Name == "Client");
+                userRole = this.warmupDbContext.Roles.FirstOrDefault(role => role.Name == "Client").Id;
             }
 
             this.warmupDbContext.Users.Add(new User
             {
                 Username = username,
                 Password = password,
-                Role = userRole
+                RoleId = userRole
             });
+
+            this.warmupDbContext.SaveChanges();
 
             this.ViewData["username"] = username;
 
@@ -85,7 +88,7 @@ namespace Warmup.App.Core.Controllers
             }
 
             this.authentication.User = username;
-            this.authentication.Role = this.warmupDbContext.Users.FirstOrDefault(x => x.Username == username).Role.Name;
+            this.authentication.Role = this.warmupDbContext.Users.Include(x => x.Role).FirstOrDefault(x => x.Username == username).Role.Name;
             this.authentication.IsAuthenticated = true;
 
             if (!this.authentication.SessionData.ContainsKey(username + "-cart"))
@@ -128,8 +131,8 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            this.warmupDbContext.Users.FirstOrDefault(x => x.Username == username).Role 
-                = this.warmupDbContext.Roles.FirstOrDefault(y => y.Name == role);
+            this.warmupDbContext.Users.FirstOrDefault(x => x.Username == username).RoleId 
+                = this.warmupDbContext.Roles.FirstOrDefault(y => y.Name == role).Id;
 
             this.ViewData["username"] = username;
             this.ViewData["role"] = role;

@@ -1,29 +1,30 @@
-﻿using Warmup.App.Data.Entities;
+﻿using Microsoft.EntityFrameworkCore;
+using Warmup.App.Data.Entities;
 
 namespace Warmup.App.Data
 {
-    public class WarmupDbContext
+    public class WarmupDbContext : DbContext
     {
-        public List<Product> Products { get; set; }
+        public virtual DbSet<Product> Products { get; set; }
         
-        public List<ProductDisplay> ProductDisplays { get; set; }
+        public virtual DbSet<ProductDisplay> ProductDisplays { get; set; }
 
-        public List<ProductStorage> ProductStorages { get; set; }
+        public virtual DbSet<ProductStorage> ProductStorages { get; set; }
 
-        public List<User> Users { get; set; }
+        public virtual DbSet<User> Users { get; set; }
 
-        public List<UserRole> Roles { get; set; }
+        public virtual DbSet<UserRole> Roles { get; set; }
 
-        public List<CashDeck> CashDecks { get; set; }
+        public virtual DbSet<CashDeck> CashDecks { get; set; }
 
-        public WarmupDbContext()
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            this.Products = new List<Product>();
-            this.ProductDisplays = new List<ProductDisplay>();  
-            this.ProductStorages = new List<ProductStorage>();
-            this.Users = new List<User>();
-            this.Roles = new List<UserRole>();
-            this.CashDecks = new List<CashDeck>();
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseSqlServer(@"Server=DESKTOP-39PBTTP\SQLEXPRESS;Database=warmup;Trusted_Connection=True;");
+            }
+
+            base.OnConfiguring(optionsBuilder);
         }
     }
 }

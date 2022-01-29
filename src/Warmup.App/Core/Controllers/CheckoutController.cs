@@ -1,4 +1,5 @@
-﻿using Warmup.App.Common.Attributes;
+﻿using Microsoft.EntityFrameworkCore;
+using Warmup.App.Common.Attributes;
 using Warmup.App.Core.Base.Views;
 using Warmup.App.Core.Models.Checkout;
 using Warmup.App.Core.Models.Core;
@@ -39,12 +40,13 @@ namespace Warmup.App.Core.Controllers
 
             CashDeck deck = new CashDeck
             {
-                Index = int.Parse(deckIndex),
+                CashDeckIndex = int.Parse(deckIndex),
                 TotalMoney = 0M
             };
 
             this.warmupDbContext.CashDecks.Add(deck);
-            this.queueManager.DeckQueues.Add(deck.Index, new Queue<User>());
+            this.warmupDbContext.SaveChanges();
+            this.queueManager.DeckQueues.Add(deck.CashDeckIndex, new Queue<User>());
 
             this.ViewData["deckIndex"] = deckIndex;
 
@@ -63,8 +65,8 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            CashDeck deck = this.warmupDbContext.CashDecks.FirstOrDefault(x => x.Index == int.Parse(deckIndex));
-            User cashier = this.warmupDbContext.Users.FirstOrDefault(x => x.Username == cashierName);
+            CashDeck deck = this.warmupDbContext.CashDecks.FirstOrDefault(x => x.CashDeckIndex == int.Parse(deckIndex));
+            User cashier = this.warmupDbContext.Users.Include(x => x.Role).FirstOrDefault(x => x.Username == cashierName);
 
             if (cashier.Role.Name != "Admin" && cashier.Role.Name != "SeniorCashier" && cashier.Role.Name != "JuniorCashier")
             {
@@ -73,6 +75,9 @@ namespace Warmup.App.Core.Controllers
             }
 
             deck.Cashier = cashier;
+
+            this.warmupDbContext.Update(deck);
+            this.warmupDbContext.SaveChanges();
 
             this.ViewData["deckIndex"] = deckIndex;
             this.ViewData["cashierName"] = cashier.Username;
@@ -92,7 +97,7 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            this.ViewData["decks"] = this.warmupDbContext.CashDecks;
+            this.ViewData["decks"] = this.warmupDbContext.CashDecks.ToList();
             this.ViewData["deckQueues"] = this.queueManager.DeckQueues.ToDictionary(x => x.Key, x => x.Value.Count);
             this.ViewData["view"] = this.GetResource("deck-all.txt");
 
@@ -145,7 +150,7 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            CashDeck deck = this.warmupDbContext.CashDecks.FirstOrDefault(cd => cd.Index == int.Parse(index));
+            CashDeck deck = this.warmupDbContext.CashDecks.FirstOrDefault(cd => cd.CashDeckIndex == int.Parse(index));
 
             if (this.authentication.User != deck.Cashier.Username)
             {
@@ -153,13 +158,13 @@ namespace Warmup.App.Core.Controllers
                 return new BlankView();
             }
 
-            if (this.queueManager.DeckQueues[deck.Index].Count == 0)
+            if (this.queueManager.DeckQueues[deck.CashDeckIndex].Count == 0)
             {
                 Console.WriteLine("There are no clients in the queue...");
                 return new BlankView();
             }
 
-            User client = this.queueManager.DeckQueues[deck.Index].Dequeue();
+            User client = this.queueManager.DeckQueues[deck.CashDeckIndex].Dequeue();
             UserCart clientCart = (UserCart)this.authentication.SessionData[client.Username + "-cart"];
             Dictionary<Product, int> productsAndQuantity = clientCart.productsAndQuantity
                 .ToDictionary(x => this.warmupDbContext.Products.FirstOrDefault(p => p.Id == x.Key), x => x.Value);

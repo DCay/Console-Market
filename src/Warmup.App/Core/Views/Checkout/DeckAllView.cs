@@ -23,9 +23,9 @@ namespace Warmup.App.Core.Views.Product
                 foreach (var deck in decks)
                 {
                     string deckCashierName = (deck.Cashier == null ? "CLOSED" : deck.Cashier.Username);
-                    int deckQueue = ((Dictionary<int, int>) this.ViewData["deckQueues"])[deck.Index];
+                    int deckQueue = ((Dictionary<int, int>) this.ViewData["deckQueues"])[deck.CashDeckIndex];
 
-                    result.AppendLine($"# {deck.Index.ToString().PadRight(8)} # {deckCashierName.PadRight(30)} # {deckQueue.ToString().PadRight(5)} #");
+                    result.AppendLine($"# {deck.CashDeckIndex.ToString().PadRight(8)} # {deckCashierName.PadRight(30)} # {deckQueue.ToString().PadRight(5)} #");
                 }
             }
 
